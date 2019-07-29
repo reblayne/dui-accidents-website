@@ -5,52 +5,32 @@ import pdb
 
 import dill
 import shapefile
-from bokeh.models import HoverTool, ColumnDataSource
-from bokeh.palettes import Viridis6
-from bokeh.plotting import figure, show, output_notebook
 
 import numpy as np
 import pandas as pd
 import math
+import datetime
 from sklearn.linear_model import LogisticRegression
 
-
-from bokeh.layouts import gridplot
-from bokeh.plotting import figure, show, output_file
-from bokeh.layouts import column, widgetbox
+from bokeh.models import HoverTool, ColumnDataSource, LogColorMapper
+from bokeh.palettes import Viridis6
+from bokeh.plotting import figure, show, output_notebook, output_file, ColumnDataSource
+from bokeh.layouts import gridplot, column, widgetbox, row, column
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource
-
-from bokeh.io import show
-from bokeh.models import LogColorMapper
+from bokeh.io import show, curdoc
+from bokeh.models.widgets import TextInput
 # from bokeh.palettes import Blues8 as palette   # this is the blue color palette  # https://bokeh.pydata.org/en/latest/docs/reference/palettes.html#bokeh-palettes
-from bokeh.plotting import figure, show
-
 from bokeh.sampledata.us_counties import data as counties
-from bokeh.sampledata.unemployment import data as unemployment
-import datetime
-# from datetime import datetime
-from bokeh.layouts import row, column
-from bokeh.models import CustomJS, Slider
-from bokeh.plotting import figure, output_file, show, ColumnDataSource
-
-from bokeh.io import curdoc
-from bokeh.layouts import row, column
-from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Slider, TextInput
-from bokeh.plotting import figure
 
 import requests
 import simplejson as json
-
-#Connect the app
-app = Flask(__name__)
-
 
 import os
 import requests
 import itertools
 
+#Connect the app
+app = Flask(__name__)
 
 # dictionary that maps month to month number
 month_code_dict = {
