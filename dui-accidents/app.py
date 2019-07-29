@@ -11,6 +11,9 @@ from bokeh.plotting import figure, show, output_notebook
 
 import numpy as np
 import pandas as pd
+import math
+from sklearn.linear_model import LogisticRegression
+
 
 from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show, output_file
@@ -65,6 +68,16 @@ month_code_dict = {
     "December" : 12,
 }
 
+# dictionary that maps weekday number to weekday name
+weekday_code_dict = {
+    "Monday" : 0,
+    "Tuesday" : 1,
+    "Wednesday" : 2,
+    "Thursday" : 3,
+    "Friday" : 4,
+    "Saturday" : 5,
+    "Sunday" : 6,
+}
 
 # dictionary that maps date to holiday
 holiday_dict = {
@@ -357,7 +370,7 @@ def format_county_info(county_names, county_info_dict, county_prob_dict):
         percent_male.append(info[1])
         avg_age.append(info[2])
         percent_white.append(info[3])
-        predicted_prob.append(info[4])
+        predicted_prob.append(county_prob_dict[county])
     instances = pd.Series(instances)
     percent_male = [round(100*i, 1) for i in percent_male]
     percent_male = pd.Series(percent_male)
@@ -382,17 +395,170 @@ def get_county_summaries(month, day, hour, county_names, county_prob_dict):
     return instances, percent_male, avg_age, percent_white, predicted_prob
 
 
+#functions below work to take in user-specified day and return the probability
+# of an accident happening in each county on that day
+def get_county_level_info(year, county_info, county_names):
+    df = county_info[county_info.Year == year]
+    df = df[['Area name', 'population_estimate', 'unemployment_rate',
+            'Rural_urban_continuum_code_2013', 'Percent_no_college_degree']]
+    df = df.iloc[1:]   # drop top row
+    return df
+
+# generate year, hour, month, dayofweek, holiday col
+def set_user_input(year, month, day, hour, county_df):
+    county_df['year'] = year
+    county_df['month'] = month
+    county_df['day'] = day
+    county_df['hour'] = float(hour)
+
+    month_code = month_code_dict[month]
+    county_df['month_code'] = month_code
+
+    from datetime import datetime
+    date = datetime(year, month_code, day, 0, 0)
+
+    # get weekday
+    weekday_code = date.weekday()
+    weekday = weekday_dict[weekday_code]
+    county_df['dayofweek'] = weekday
+    # add day of week to dataframe
+    dayofweek_code = weekday_code_dict
+    county_df['dayofweek_code'] = weekday_code_dict[weekday]
+
+    # check holiday
+    if date in holiday_dict:   # check if day is holiday first and return instances on past holiday
+        holiday = holiday_dict[date]
+        county_df['holiday'] = holiday
+    else:
+        county_df['holiday'] = 'Not Holiday Related'
+
+    return(county_df)
+
+def preprocess_user_df(df):
+    # do all the stuff I did to og df before running model
+    df.rename(columns={'Area name': 'county_name'}, inplace=True)
+
+    # ordinal cyclic variables
+    df["xhour"] = np.sin(2*math.pi*df["hour"]/24)
+    df["yhour"] = np.cos(2*math.pi*df["hour"]/24)
+
+    df["xmonth"] = np.sin(2*math.pi*df["month_code"]/12)
+    df["ymonth"] = np.cos(2*math.pi*df["month_code"]/12)
+
+    df["xdayofweek"] = np.sin(2*math.pi*df["dayofweek_code"]/7)
+    df["ydayofweek"] = np.cos(2*math.pi*df["dayofweek_code"]/7)
+
+    # year as ordered factor variable
+    df['year'] = df['year'].apply(str)
+    df['year'] = pd.Categorical(df['year'], categories = ["2007","2008","2009","2010","2011","2012","2013",
+                                      "2014","2015","2016","2017","2018","2019","2020"], ordered = True)
+
+    df['dayofweek'] = pd.Categorical(df['dayofweek'], categories = ["Monday", "Tuesday", "Wednesday",
+                                                                   "Thursday", "Friday", "Saturday",
+                                                                    "Sunday"], ordered = True)
+    df['month'] = pd.Categorical(df['month'], categories = ["January", "February", "March", "April", "May",
+                                                            "June", "July", "August", "September", "October",
+                                                            "November", "December"], ordered = True)
+
+    # convert holiday, Rural_urban_continuum_code_2013, fatal_DUI_accident to factor variables
+    df['holiday'] = df['holiday'].astype('category')
+    df['Rural_urban_continuum_code_2013'] = df['Rural_urban_continuum_code_2013'].astype('category')
+
+    return df
+
+# create dummy variables for categorical variables: year, holiday, Rural_urban_continuum_code_2013
+# and for month and dayofweek
+def create_dummy_vars(df, cat_vars):
+    for var in cat_vars:
+        cat_list='var'+'_'+var
+        cat_list = pd.get_dummies(df[var], prefix=var)
+        data1=df.join(cat_list)
+        df=data1
+    data_vars=df.columns.values.tolist()
+    to_keep=[i for i in data_vars if i not in cat_vars]
+
+    data_final = df[to_keep]
+    return (df, data_final)
+
+def add_dummy_vars(df, cat_vars):
+    df, data_final = create_dummy_vars(df, cat_vars)
+    holiday_list = ['4th of July', 'Christmas', 'Columbus Day', 'Labor Day', "Martin Luther King's Birthday",
+                   'Memorial Day', "New Year's Day", "New Year's Eve", 'Not Holiday Related', "President's Day",
+                   'Thanksgiving', '.']
+    var = 'holiday'
+    curr_holiday = df['holiday'].iloc[0]
+    for holiday in holiday_list:
+        if (holiday != curr_holiday):
+            var_name = var + '_' + holiday
+            df[var_name] = 0
+    return df
+
+
+# wrap up all functions to get quick answer on probabilities:
+def get_county_probs(year, month, day, hour, county_info, county_names, county_logreg, time_logreg):
+    county_cols=['population_estimate', 'unemployment_rate', 'Percent_no_college_degree',
+       'Rural_urban_continuum_code_2013_1.0',
+       'Rural_urban_continuum_code_2013_2.0',
+       'Rural_urban_continuum_code_2013_3.0',
+       'Rural_urban_continuum_code_2013_4.0',
+       'Rural_urban_continuum_code_2013_5.0',
+       'Rural_urban_continuum_code_2013_6.0',
+       'Rural_urban_continuum_code_2013_7.0',
+       'Rural_urban_continuum_code_2013_8.0']
+
+    time_cols=['year_2007', 'year_2008', 'year_2009',
+           'year_2010', 'year_2011', 'year_2012', 'year_2013', 'year_2014',
+           'year_2015', 'year_2016', 'year_2017', 'year_2018', 'year_2019',
+           'year_2020', 'holiday_.', 'holiday_4th of July',
+           'holiday_Christmas', 'holiday_Columbus Day', 'holiday_Labor Day',
+           "holiday_Martin Luther King's Birthday", 'holiday_Memorial Day',
+           "holiday_New Year's Day", "holiday_New Year's Eve",
+           'holiday_Not Holiday Related', "holiday_President's Day",
+           'holiday_Thanksgiving', 'xmonth',
+           'ymonth', 'xdayofweek', 'ydayofweek']
+
+    county_names = sorted(list(set(county_names)))  # sort county names
+    county_df = get_county_level_info(year, county_info, county_names)
+    user_df = set_user_input(year, month, day, hour, county_df)
+    user_df = preprocess_user_df(user_df)
+    cat_vars=['year','holiday','Rural_urban_continuum_code_2013', 'month', 'dayofweek']
+    user_df = add_dummy_vars(user_df, cat_vars)
+    X = user_df[county_cols]
+    time_X = user_df[time_cols]
+
+    probabilities = county_logreg.predict_proba(X)[:,1]     # predicted probabilities based on model
+    time_prob = time_logreg.predict_proba(time_X)[:,1][0]
+    county_prob_dict = {}
+    for i in range(len(county_names)):
+        county_prob_dict[county_names[i]] = probabilities[i]*time_prob*100.0     # combine both models by weighting pred by time prob
+
+    return county_prob_dict
+
+
+
+
+
+
 def get_plot22(month, day, hour):
     map_output = dill.load(open('map_output.pkd', 'rb'))
     county_names, lat, long = parse_map_data(map_output)
     state_xs, state_ys = get_state_outline()
-    county_prob_dict = dill.load(open('county_prob_dict.pkd', 'rb'))
+
+    county_info = dill.load(open('county_info.pkd', 'rb'))
+    county_info = county_info[county_info.State == 'CA']
+
+    county_logreg = dill.load(open('county_logreg.pkd', 'rb'))
+    time_logreg = dill.load(open('time_logreg.pkd', 'rb'))
+
+    county_prob_dict = get_county_probs(2018, month, day, hour, county_info, county_names, county_logreg, time_logreg)
+
+    # county_prob_dict = dill.load(open('county_prob_dict.pkd', 'rb'))
     instances, percent_male, avg_age, percent_white, predicted_prob = get_county_summaries(month, day, hour, county_names, county_prob_dict)
 
     palette = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1', '#c6dbef', '#deebf7', '#ebf3fa']  # blues
     palette.reverse()
 
-    color_mapper = LogColorMapper(palette=palette)
+    color_mapper = LogColorMapper(palette=palette, low=0.1, high=25)
 
     data=dict(
         x=lat,
@@ -429,25 +595,9 @@ def get_plot22(month, day, hour):
               line_color="#000000", line_width=2, line_alpha=0.3)
 
     p.patches('x', 'y', source=data,
-              fill_color={'field': 'num', 'transform': color_mapper},    # modify how we fill color
-              fill_alpha=0.7, line_color="white", line_width=0.5)
+              fill_color={'field': 'prob', 'transform': color_mapper},    # modify how we fill color
+              fill_alpha=.9, line_color="white", line_width=0.5)
 
-
-    # Set up widgets
-#     text = TextInput(title="title", value='my sine wave')
-#     offset = Slider(title="offset", value=0.0, start=-5.0, end=5.0, step=0.1)
-#     amplitude = Slider(title="amplitude", value=1.0, start=-5.0, end=5.0, step=0.1)
-#     phase = Slider(title="phase", value=0.0, start=0.0, end=2*np.pi)
-#     freq = Slider(title="frequency", value=1.0, start=0.1, end=5.1, step=0.1)
-#
-#     layout = row(
-#     p,
-#     column(offset, amplitude, phase, freq),
-# )
-#     # Set up layouts and add to document
-#     inputs = column(text, offset, amplitude, phase, freq)
-
-    # show(p)
     return p
 
 
