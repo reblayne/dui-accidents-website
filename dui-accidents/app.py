@@ -1,5 +1,5 @@
 #Load the packages
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, jsonify
 
 import pdb
 
@@ -539,7 +539,7 @@ def get_county_probs(year, month, day, hour, county_info, county_names, county_l
 
 
 
-def get_plot22(month, day, hour):
+def get_plot(month, day, hour):
     map_output = dill.load(open('map_output.pkd', 'rb'))
     county_names, lat, long = parse_map_data(map_output)
     state_xs, state_ys = get_state_outline()
@@ -601,52 +601,6 @@ def get_plot22(month, day, hour):
     return p
 
 
-def get_dataset(stock):
-    api_url = 'https://www.quandl.com/api/v1/datasets/WIKI/' + stock + '.json'
-    session = requests.Session()
-    session.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
-    raw_data = session.get(api_url)
-    json1 = json.loads(raw_data.content)
-
-    # convert json to pandas df
-    date, open, close, adj_open, adj_close = [],[],[],[],[]
-    # pdb.set_trace()
-    for result in json1['data']:
-        date.append(result[0])
-        open.append(result[1])
-        close.append(result[4])
-        adj_open.append(result[8])
-        adj_close.append(result[11])
-
-    data = pd.DataFrame([date, open, close, adj_open, adj_close]).T
-    data.columns = ["date", "open", "close", "adj_open", "adj_close"]
-
-    cond = data['date'] > '2016-12-31'   # select only 2017-2018 data
-    subset = data[cond]   # Select all cases where condition is met
-    # pdb.set_trace()
-
-    return subset
-
-def datetime(x):
-    return np.array(x, dtype=np.datetime64)
-
-def update_plot(attr, old, new):
-    new_subset = get_dataset(text_input.value)
-    source.data = {'x': datetime(new_subset['date']), 'y': new_subset['adj_close']}
-
-#Helper function
-def get_plot(subset):
-    p1 = figure(x_axis_type="datetime", title="Stock Closing Prices",
-                width=600, height=600, tools='pan,box_zoom,reset,save')
-    p1.grid.grid_line_alpha=0.3
-    p1.xaxis.axis_label = 'Date'
-    p1.yaxis.axis_label = 'Price'
-
-    source = ColumnDataSource(data={'x': datetime(subset['date']), 'y': subset['adj_close']})
-    p1.line('x', 'y', color='#B2DF8A', legend='Closing Price', source=source)
-    p1.legend.location = "top_left"
-
-    return p1
 
 @app.route('/', methods=['POST'])
 def my_form_post():
@@ -658,14 +612,9 @@ def my_form_post():
         date_info = curr_date.split(' ')
         month = date_info[0]
         day = int(date_info[1])
-    # processed_text = curr_date.upper()
 
-    # stock = processed_text  # set the default plot to GOOG
-    # subset = get_dataset(stock)
 
-    #Setup plot
-    # p = get_plot(subset)
-    p = get_plot22(month, day, 5)
+    p = get_plot(month, day, 5)
     script, div = components(p)
 
     #Render the page
@@ -693,7 +642,7 @@ def homepage():
     # subset = get_dataset(stock)
 
     #Setup plot
-    p = get_plot22('December', 25, 5)
+    p = get_plot('January', 1, 5)
 
     # inputs, plot = get_plot22('December', 25, 5)
     # curdoc().add_root(row(inputs, plot, width=800))
@@ -708,15 +657,7 @@ def homepage():
 
 @app.route('/index.html')
 def return_home1():
-    return homepage()
-# def homepage1():
-#     #Setup plot
-#     p = get_plot22('December', 25, 5)
-#     # p = get_plot(subset)
-#     script, div = components(p)
-#     #Render the page
-#     return render_template('index.html', script=script, div=div, curr_date="January 1")
-
+    return redirect("http://0.0.0.0:5000/", code=302)
 
 @app.route("/templates/index.html")
 def return_home():
