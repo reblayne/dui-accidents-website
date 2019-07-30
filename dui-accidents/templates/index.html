@@ -8,7 +8,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
 
-  <title>Clean Blog - Start Bootstrap Theme</title>
+  <title>Down the Road</title>
 
   <!-- Bootstrap core CSS -->
   <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -50,7 +50,7 @@
             <a class="nav-link" href="post.html">The Data</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="contact.html">Predictive Model</a>
+            <a class="nav-link" href="contact.html">About</a>
           </li>
         </ul>
       </div>
@@ -81,22 +81,26 @@
             Fatal Drunk Driving Accidents in California
           </h3>
           <p class="post-meta"> Remembering past accidents and predicting future accidents</p>
-          <label class="bk">Enter date:</label>
+          <p>Down the Road is an interactive predictive tool for drunk driving accidents in the state of California. Down the Road was designed to help users better understand past accidents by region and predict future danger hotspots of drunk driving accidents on a given day.</p>
+          <hr>
+          <label class="bk"><b>Enter date:</b></label>
           <form method="POST">
             <input name="text" value = "{{curr_date}}">
             <input type="submit">
           </form>
 
           {{ div | safe }}
+          <hr>
+          <p>
+            <br><b>How to use: </b>
+            <br>- Start by selecting a date in the format <i>Month Day</i>.
+            <br>- Counties are then colored by the predicted probability of a fatal drunk driving accident happening on that given day. This allows you to see relative danger levels by county – darker counties have a higher likelihood of an accident.
+            <br>- Hover over counties to learn more about past accidents on historical days. Better understand the demographic breakdown of the drivers responsible for these accidents on a particular day.
+          </p>
+          <hr>
+          <p class="post-meta"> Find details on the data used and the model building process on the  <a href="/templates/about.html">Road Map</a> page.</p>
         </div>
-        <hr>
         <div class="post-preview">
-          <a href="/templates/post.html">
-            <p class="post-meta">Find details on data used here. </p>
-          </a>
-          <a href="contact.html">
-            <p class="post-meta">Find details on predictive model here. </p>
-          </a>
         </div>
       </div>
     </div>
