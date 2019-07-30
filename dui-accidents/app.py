@@ -366,9 +366,10 @@ def format_county_info(county_names, county_info_dict, county_prob_dict):
 # return a list of the name of each county with value = # instance, % men
 def get_county_summaries(month, day, hour, county_names, county_prob_dict):
     # positive_df = pd.read_csv('Fatal Accidents with County Level Info (Condensed).csv')
-    positive_df = dill.load(open('positive_df.pkd', 'rb'))
-    positive_df = positive_df[positive_df.alcohol_involved == 1]
-    positive_df = positive_df[positive_df.State == 'CA']
+    # positive_df = dill.load(open('positive_df.pkd', 'rb'))
+    # positive_df = positive_df[positive_df.alcohol_involved == 1]
+    # positive_df = positive_df[positive_df.State == 'CA']
+    positive_df = dill.load(open('positive_df_for_CA.pkd', 'rb'))
     subset = get_subset(positive_df, month, day, hour)     # user chooses day
     county_info_dict = summarize_data_by_county(county_names, subset, county_prob_dict)
     instances, percent_male, avg_age, percent_white, predicted_prob = format_county_info(county_names, county_info_dict, county_prob_dict)
@@ -613,6 +614,10 @@ def homepage():
     # map_output = dill.load(open('map_output.pkd', 'rb'))
     # positive_df = dill.load(open('positive_df.pkd', 'rb'))
     # get_plot22()
+
+
+
+
 
     print("loaded files")
 
