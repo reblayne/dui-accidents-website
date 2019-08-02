@@ -1,1 +1,1 @@
-web: gunicorn dui-accidents/app:app
+web: gunicorn dui_accidents.app:app
