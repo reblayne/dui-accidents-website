@@ -218,7 +218,7 @@ weekday_dict = {
 
 def get_map_output():
     map_high_res = "cb_2015_us_county_500k"
-    path = "/Users/rebeccalayne/Library/Mobile Documents/com~apple~CloudDocs/Documents/TDI Fellowship/capstone_project/dui-accidents/cb_2015_us_county_500k/"
+    path = "/Users/rebeccalayne/Library/Mobile Documents/com~apple~CloudDocs/Documents/TDI Fellowship/capstone_project/dui_accidents/cb_2015_us_county_500k/"
     map_output = get_map_data(map_high_res, path)
     dill.dump(map_output, open('map_output.pkd', 'wb'))
 
