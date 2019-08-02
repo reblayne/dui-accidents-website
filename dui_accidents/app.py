@@ -20,7 +20,7 @@ from bokeh.embed import components
 from bokeh.io import show, curdoc
 from bokeh.models.widgets import TextInput
 # from bokeh.palettes import Blues8 as palette   # this is the blue color palette  # https://bokeh.pydata.org/en/latest/docs/reference/palettes.html#bokeh-palettes
-from bokeh.sampledata.us_counties import data as counties
+# from bokeh.sampledata.us_counties import data as counties
 
 import requests
 import simplejson as json
@@ -287,7 +287,8 @@ def parse_map_data(map_output):
 
 
 def get_state_outline():
-    from bokeh.sampledata.us_states import data as states    # state info for plotting border lines
+    # from bokeh.sampledata.us_states import data as states    # state info for plotting border lines
+    states = dill.load(open('states.pkd', 'rb'))
     # outline for CA
     state_xs = [states['CA']["lons"]]
     state_ys = [states['CA']["lats"]]
