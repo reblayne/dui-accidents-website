@@ -641,13 +641,13 @@ def homepage():
     return render_template('index.html', script=script, div=div, curr_date="January 1")
 
 
+@app.route("/templates/index.html")
+def return_home():
+    return redirect("http://0.0.0.0:5000/", code=302)
+
 @app.route('/index.html')
 def return_home1():
     return redirect("http://0.0.0.0:5000/", code=302)
-
-@app.route("/templates/index.html")
-def return_home():
-    return homepage()
 
 @app.route("/templates/post.html")
 def data_page():
