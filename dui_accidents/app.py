@@ -643,11 +643,13 @@ def homepage():
 
 @app.route("/templates/index.html")
 def return_home():
-    return redirect("http://0.0.0.0:5000/", code=302)
+    return redirect("https://down-the-road.herokuapp.com/", code=302)
+    # return redirect("http://0.0.0.0:5000/", code=302)
 
 @app.route('/index.html')
 def return_home1():
-    return redirect("http://0.0.0.0:5000/", code=302)
+    return redirect("https://down-the-road.herokuapp.com/", code=302)
+    # return redirect("http://0.0.0.0:5000/", code=302)
 
 @app.route("/templates/post.html")
 def data_page():
