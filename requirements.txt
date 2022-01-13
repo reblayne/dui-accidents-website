@@ -33,7 +33,7 @@ nbformat==4.4.0
 numpy==1.16.2
 packaging==19.0
 pandas==0.24.2
-Pillow==6.0.0
+Pillow==9.0.0
 plotly==3.10.0
 pyarrow==0.14.0
 pygeocoder==1.2.5
