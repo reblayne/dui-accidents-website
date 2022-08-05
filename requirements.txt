@@ -35,7 +35,7 @@ packaging==19.0
 pandas==0.24.2
 Pillow==6.0.0
 plotly==3.10.0
-pyarrow==0.14.0
+pyarrow==0.15.1
 pygeocoder==1.2.5
 pyparsing==2.4.0
 pyproj==2.2.1
